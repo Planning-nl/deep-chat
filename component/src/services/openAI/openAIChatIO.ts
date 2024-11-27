@@ -124,8 +124,15 @@ export class OpenAIChatIO extends DirectServiceIO {
       if (!this._streamToolCalls) {
         this._streamToolCalls = delta.tool_calls;
       } else {
-        delta.tool_calls.forEach((tool, index) => {
-          if (this._streamToolCalls) this._streamToolCalls[index].function.arguments += tool.function.arguments;
+        delta.tool_calls.forEach((tool) => {
+          if (this._streamToolCalls) {
+            const existingTool = this._streamToolCalls?.[tool.index];
+            if (!existingTool) {
+              this._streamToolCalls[tool.index] = tool;
+            } else {
+              this._streamToolCalls[tool.index].function.arguments += tool.function.arguments;
+            }
+          }
         });
       }
     }

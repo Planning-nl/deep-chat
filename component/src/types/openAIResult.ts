@@ -48,7 +48,7 @@ export interface OpenAIRunResult {
   };
 }
 
-export type ToolCalls = {function: {name: string; arguments: string}; id: string}[];
+export type ToolCalls = {function: {name: string; arguments: string}; id: string; index: number}[];
 
 export interface ToolAPI {
   tool_calls?: ToolCalls;
