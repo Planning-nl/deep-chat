@@ -1,10 +1,10 @@
 import {MessageStream} from '../../views/chat/messages/stream/messageStream';
-import {MessageUtils} from '../../views/chat/messages/messageUtils';
+import {MessageUtils} from '../../views/chat/messages/utils/messageUtils';
 import {CustomHandler, IWebsocketHandler} from './customHandler';
 import {ErrorMessages} from '../errorMessages/errorMessages';
 import {Messages} from '../../views/chat/messages/messages';
-import {StreamSimulation} from '../../types/stream';
 import {ServiceIO} from '../../services/serviceIO';
+import {StreamConfig} from '../../types/stream';
 import {Response} from '../../types/response';
 import {RequestUtils} from './requestUtils';
 import {DeepChat} from '../../deepChat';
@@ -15,10 +15,8 @@ export type RoleToStream = {[role: string]: MessageStream};
 
 export class Websocket {
   public static setup(io: ServiceIO) {
-    if (io.connectSettings.url !== Demo.URL) {
-      io.permittedErrorPrefixes = ['Connection error', 'Error in server message'];
-      io.websocket = 'pending'; // main reason why not connecting here is because messages is not available yet
-    }
+    io.permittedErrorPrefixes = ['Connection error', 'Error in server message'];
+    io.websocket = 'pending'; // main reason why not connecting here is because messages is not available yet
   }
 
   private static isElementPresentInDOM(deepChat: DeepChat) {
@@ -69,16 +67,17 @@ export class Websocket {
       if (!io.extractResultData) return; // this return should theoretically not execute
       try {
         const result: Response = JSON.parse(message.data);
-        const finalResult = (await io.deepChat.responseInterceptor?.(result)) || result;
-        const resultData = await io.extractResultData(finalResult);
-        if (!resultData || typeof resultData !== 'object')
+        const finalResult = await RequestUtils.basicResponseProcessing(messages, result, {io, displayError: false});
+        if (!finalResult) {
           throw Error(ErrorMessages.INVALID_RESPONSE(result, 'server', !!io.deepChat.responseInterceptor, finalResult));
+        }
         if (Stream.isSimulation(io.stream)) {
           const upsertFunc = Websocket.stream.bind(this, io, messages, roleToStream);
           const stream = roleToStream[result.role || MessageUtils.AI_ROLE];
-          Stream.upsertWFiles(messages, upsertFunc, stream, resultData);
+          Stream.upsertWFiles(messages, upsertFunc, stream, finalResult);
         } else {
-          messages.addNewMessage(resultData);
+          const messageDataArr = Array.isArray(finalResult) ? finalResult : [finalResult];
+          messageDataArr.forEach((data) => messages.addNewMessage(data));
         }
       } catch (error) {
         RequestUtils.displayError(messages, error as object, 'Error in server message');
@@ -94,6 +93,7 @@ export class Websocket {
   }
 
   public static async sendWebsocket(io: ServiceIO, body: object, messages: Messages, stringifyBody = true) {
+    if (io.connectSettings?.url === Demo.URL) return Demo.request(io, messages);
     const ws = io.websocket;
     if (!ws || ws === 'pending') return;
     const requestDetails = {body, headers: io.connectSettings?.headers};
@@ -101,9 +101,6 @@ export class Websocket {
     if (error) return messages.addNewErrorMessage('service', error);
     if (!Websocket.isWebSocket(ws)) return ws.newUserMessage.listener(interceptedBody);
     const processedBody = stringifyBody ? JSON.stringify(interceptedBody) : interceptedBody;
-    if (io.connectSettings?.url === Demo.URL) {
-      return Demo.request(io, messages);
-    }
     if (ws.readyState === undefined || ws.readyState !== ws.OPEN) {
       console.error('Connection is not open');
       if (!messages.isLastMessageError()) messages.addNewErrorMessage('service', 'Connection error');
@@ -129,7 +126,7 @@ export class Websocket {
 
   public static stream(io: ServiceIO, messages: Messages, roleToStream: RoleToStream, result?: Response) {
     if (!result) return;
-    const simulation = (io.stream as StreamSimulation).simulation;
+    const simulation = (io.stream as StreamConfig).simulation;
     if (typeof simulation === 'string') {
       const role = result.role || MessageUtils.AI_ROLE;
       const stream = roleToStream[role];

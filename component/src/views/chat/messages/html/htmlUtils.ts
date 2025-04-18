@@ -7,7 +7,7 @@ import {MessagesBase} from '../messagesBase';
 
 export class HTMLUtils {
   public static applyStylesToElement(element: HTMLElement, styles: StatefulStyles) {
-    const statefulStyles = StyleUtils.processStateful(styles, {}, {});
+    const statefulStyles = StyleUtils.processStateful(styles);
     StatefulEvents.add(element, statefulStyles);
     Object.assign(element.style, statefulStyles.default);
   }
@@ -61,5 +61,22 @@ export class HTMLUtils {
       HTMLUtils.traverseNodes(childNode, topLevelElements);
     });
     return topLevelElements;
+  }
+
+  public static isTemporaryBasedOnHTML(html: string) {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    return HTMLDeepChatElements.isElementTemporary({
+      outerContainer: tempDiv,
+      bubbleElement: tempDiv,
+      innerContainer: tempDiv,
+    });
+  }
+
+  // useful for removing event listeners
+  public static replaceElementWithNewClone(oldElement: HTMLElement, elementToBeCloned?: HTMLElement) {
+    const newElement = (elementToBeCloned || oldElement).cloneNode(true) as HTMLElement;
+    oldElement.parentNode?.replaceChild(newElement, oldElement);
+    return newElement;
   }
 }

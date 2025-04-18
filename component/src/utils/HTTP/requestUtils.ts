@@ -1,3 +1,4 @@
+import {ErrorMessages} from '../errorMessages/errorMessages';
 import {Messages} from '../../views/chat/messages/messages';
 import {Response as ResponseI} from '../../types/response';
 import {RequestDetails} from '../../types/interceptors';
@@ -14,6 +15,12 @@ export type FetchFunc = (body: any) => Promise<Response>;
 export type InterceptorResult = RequestDetails & {error?: string};
 
 type InterceptorResultP = Promise<InterceptorResult>;
+
+interface RespProcessingOptions {
+  io?: ServiceIO;
+  useRI?: boolean;
+  displayError?: boolean;
+}
 
 export class RequestUtils {
   public static readonly CONTENT_TYPE = 'Content-Type';
@@ -80,19 +87,46 @@ export class RequestUtils {
     return {body: resReqDetails.body, headers: resReqDetails.headers, error: resErrDetails.error};
   }
 
-  public static validateResponseFormat(response: ResponseI) {
-    return (
-      response &&
-      typeof response === 'object' &&
-      (typeof response.error === 'string' ||
-        typeof response.text === 'string' ||
-        typeof response.html === 'string' ||
-        Array.isArray(response.files))
+  public static validateResponseFormat(response: ResponseI | ResponseI[], isStreaming: boolean) {
+    if (!response) return false;
+    const dataArr = Array.isArray(response) ? response : [response];
+    if (isStreaming && dataArr.length > 1) {
+      console.error(ErrorMessages.INVALID_STREAM_ARRAY_RESPONSE);
+      return false;
+    }
+    const invalidFound = dataArr.find(
+      (data) =>
+        typeof data !== 'object' ||
+        !(
+          typeof data.error === 'string' ||
+          typeof data.text === 'string' ||
+          typeof data.html === 'string' ||
+          Array.isArray(data.files)
+        )
     );
+    return !invalidFound;
   }
 
   public static onInterceptorError(messages: Messages, error: string, onFinish?: () => void) {
     messages.addNewErrorMessage('service', error);
     onFinish?.();
+  }
+
+  // prettier-ignore
+  public static async basicResponseProcessing(
+      messages: Messages, resp: ResponseI | ResponseI[], options: RespProcessingOptions = {}) {
+    const {io, displayError = true, useRI = true} = options;
+    if (!io?.extractResultData) return resp;
+    const responseInterceptor = useRI ? io.deepChat.responseInterceptor : undefined;
+    const result = (await responseInterceptor?.(resp)) || resp;
+    const finalResult = await io.extractResultData(result);
+    if (!finalResult || (typeof finalResult !== 'object' && !Array.isArray(finalResult))) {
+      if (displayError) {
+        const err = ErrorMessages.INVALID_RESPONSE(resp, 'response', !!responseInterceptor, result);
+        RequestUtils.displayError(messages, err);
+      }
+      return undefined;
+    }
+    return finalResult;
   }
 }

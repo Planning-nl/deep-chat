@@ -1,21 +1,27 @@
-import {MessageFile, MessageFileType} from '../../../types/messageFile';
-import {MessageContent, MessageStyles} from '../../../types/messages';
-import {MessagesBase} from './messagesBase';
-import {MessageElements} from './messages';
+import {MessageFile, MessageFileType} from '../../../../types/messageFile';
+import {MessageContent, MessageStyles} from '../../../../types/messages';
+import {MessagesBase} from '../messagesBase';
+import {MessageElements} from '../messages';
 
 export class FileMessageUtils {
   public static readonly DEFAULT_FILE_NAME = 'file';
   public static readonly FILE_BUBBLE_CLASS = 'file-message';
 
   // prettier-ignore
-  public static addMessage(
-      messages: MessagesBase, elements: MessageElements, styles: keyof MessageStyles, role: string, isTop: boolean) {
+  public static setElementProps(
+      messages: MessagesBase, elements: MessageElements, styles: keyof MessageStyles, role: string) {
     if (styles === 'loading') return;
     messages.applyCustomStyles(elements, role, true, messages.messageStyles?.[styles]);
     elements.bubbleElement.classList.add(FileMessageUtils.FILE_BUBBLE_CLASS);
+  }
+
+  // prettier-ignore
+  public static addMessage(
+      messages: MessagesBase, elements: MessageElements, styles: keyof MessageStyles, role: string, isTop: boolean) {
+    FileMessageUtils.setElementProps(messages, elements, styles, role);
     if (!isTop) {
-      messages.elementRef.appendChild(elements.outerContainer);
-      messages.elementRef.scrollTop = messages.elementRef.scrollHeight;
+      messages.appendOuterContainerElemet(elements.outerContainer);
+      if (!messages.focusMode) messages.elementRef.scrollTop = messages.elementRef.scrollHeight;
     }
   }
 
@@ -64,7 +70,7 @@ export class FileMessageUtils {
           .finally(() => {
             FileMessageUtils.waitToLoadThenScroll(messagesContainerEl);
           });
-      } catch (err) {
+      } catch (_) {
         messagesContainerEl.scrollTop = messagesContainerEl.scrollHeight;
       }
     }

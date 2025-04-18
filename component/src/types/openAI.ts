@@ -1,4 +1,4 @@
-import {InterfacesUnion} from './utilityTypes';
+import {OpenAIRealTime} from './openAIRealtime';
 
 // https://platform.openai.com/docs/api-reference/audio/createSpeech
 export type OpenAITextToSpeech = {
@@ -79,13 +79,14 @@ export interface OpenAIAssistant {
   // images can be used without a file tool type
   files_tool_type?: FileToolType | ((fileNames: string[]) => FileToolType);
   function_handler?: AssistantFunctionHandler;
+  custom_base_url?: string;
 }
 
-export type ChatFunctionHandlerResponse = InterfacesUnion<{response: string}[] | {text: string}>;
+export type ChatFunctionHandlerResponse = {response: string}[] | {text: string};
 
 export type ChatFunctionHandler = (
   functionsDetails: FunctionsDetails
-) => ChatFunctionHandlerResponse | Promise<ChatFunctionHandlerResponse>;
+) => ChatFunctionHandlerResponse | Promise<ChatFunctionHandlerResponse> | Promise<{response: string}>[];
 
 export interface OpenAIChatFunctions {
   // parameters use the JSON Schema type
@@ -106,6 +107,7 @@ export type OpenAIChat = {
 export interface OpenAI {
   chat?: true | OpenAIChat;
   assistant?: true | OpenAIAssistant;
+  realtime?: true | OpenAIRealTime;
   images?: true | OpenAIImagesDalle2 | OpenAIImagesDalle3;
   textToSpeech?: true | OpenAITextToSpeech;
   speechToText?: true | OpenAISpeechToText;

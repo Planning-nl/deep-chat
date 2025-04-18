@@ -33,6 +33,14 @@ export interface AzureRegion {
   region: string;
 }
 
+type AzureOpenAIDataSources = {
+  type: string;
+  parameters?: object;
+}[];
+
+// https://learn.microsoft.com/en-gb/azure/ai-services/openai/references/on-your-data?tabs=python#request-body
+export type AzureOpenAIChat = OpenAIChat & {data_sources?: AzureOpenAIDataSources};
+
 type URLDetails = {
   endpoint: string;
   version: string;
@@ -41,14 +49,14 @@ type URLDetails = {
 
 export interface AzureOpenAI {
   urlDetails: URLDetails;
-  chat?: true | OpenAIChat;
+  chat?: true | AzureOpenAIChat;
   assistant?: true | OpenAIAssistant;
 }
 
 export interface Azure {
-  openAI?: AzureOpenAI;
   textToSpeech?: AzureRegion & AzureTextToSpeechConfig;
   speechToText?: AzureRegion & AzureSpeechToTextConfig;
   summarization?: AzureEndpoint & AzureSummarizationConfig;
   translation?: Partial<AzureRegion> & AzureTranslationConfig;
+  openAI?: AzureOpenAI;
 }

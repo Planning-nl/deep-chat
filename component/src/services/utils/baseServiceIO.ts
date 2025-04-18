@@ -133,7 +133,8 @@ export class BaseServiceIO implements ServiceIO {
     if (!this.connectSettings) throw new Error('Request settings have not been set up');
     const processedMessages = MessageLimitUtils.processMessages(
       messages.messageToElements.map(([msg]) => msg), this.maxMessages, this.totalMessagesMaxCharLength);
-    if (this.connectSettings.websocket) {
+    // if handler is being used and demo is on, websocket calls should be directed to callServiceAPI
+    if (this.connectSettings.websocket && (!this.connectSettings.handler || this.connectSettings.url !== Demo.URL)) {
       const body = {messages: processedMessages, ...this.rawBody};
       Websocket.sendWebsocket(this, body, messages, false);
     } else {
@@ -145,7 +146,7 @@ export class BaseServiceIO implements ServiceIO {
     if (result.error) throw result.error;
     if (result.result) return Legacy.handleResponseProperty(result);
     // if invalid - process later in HTTPRequest.request
-    if (!RequestUtils.validateResponseFormat(result)) return undefined as unknown as Response;
+    if (!RequestUtils.validateResponseFormat(result, !!this.stream)) return undefined as unknown as Response;
     return result;
   }
 
@@ -154,6 +155,10 @@ export class BaseServiceIO implements ServiceIO {
   }
 
   public isWebModel() {
+    return false;
+  }
+
+  public isCustomView() {
     return false;
   }
 }

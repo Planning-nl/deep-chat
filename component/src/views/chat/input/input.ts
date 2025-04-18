@@ -12,6 +12,7 @@ import {FileAttachments} from './fileAttachments/fileAttachments';
 import {ElementUtils} from '../../../utils/element/elementUtils';
 import {ValidationHandler} from './validation/validationHandler';
 import {RecordAudio} from './buttons/microphone/recordAudio';
+import {CustomButton} from './buttons/custom/customButton';
 import {SubmitButton} from './buttons/submit/submitButton';
 import {CameraButton} from './buttons/camera/cameraButton';
 import {DropupStyles} from '../../../types/dropupStyles';
@@ -32,17 +33,18 @@ export class Input {
   constructor(deepChat: DeepChat, messages: Messages, serviceIO: ServiceIO, containerElement: HTMLElement) {
     this.elementRef = Input.createPanelElement(deepChat.inputAreaStyle);
     const buttons: Buttons = {};
-    const fileAts = this.createFileUploadComponents(deepChat, serviceIO, containerElement, buttons);
-    const textInput = new TextInputEl(deepChat, serviceIO, fileAts);
+    const fileAtts = this.createFileUploadComponents(deepChat, serviceIO, containerElement, buttons);
+    const textInput = new TextInputEl(deepChat, serviceIO, fileAtts);
     if (deepChat.speechToText && !buttons.microphone) {
       buttons.microphone = {button: new SpeechToText(deepChat, textInput, messages.addNewErrorMessage.bind(messages))};
     }
-    const submitButton = new SubmitButton(deepChat, textInput, messages, serviceIO, fileAts, buttons);
+    const submitButton = new SubmitButton(deepChat, textInput, messages, serviceIO, fileAtts, buttons);
     textInput.submit = submitButton.submitFromInput.bind(submitButton);
-    ValidationHandler.attach(deepChat, serviceIO, textInput, fileAts, submitButton);
+    ValidationHandler.attach(deepChat, serviceIO, textInput, fileAtts, submitButton);
     deepChat.submitUserMessage = submitButton.programmaticSubmit.bind(submitButton);
     buttons.submit = {button: submitButton};
-    Input.addElements(this.elementRef, textInput, buttons, containerElement, fileAts, deepChat.dropupStyles);
+    if (deepChat.customButtons) CustomButton.add(deepChat.customButtons, buttons, deepChat.dropupStyles);
+    Input.addElements(this.elementRef, textInput, buttons, containerElement, fileAtts, deepChat.dropupStyles);
   }
 
   private static createPanelElement(customStyle?: CustomStyle) {
@@ -91,8 +93,8 @@ export class Input {
       fileAttachments: FileAttachments, dropupStyles?: DropupStyles) {
     ElementUtils.addElements(panel, textInput.elementRef);
     const buttonContainers = ButtonContainers.create();
-    const positions = InputButtonPositions.addButtons(buttonContainers, buttons, container, dropupStyles);
-    InputButtonStyleAdjustments.set(textInput.inputElementRef, buttonContainers, fileAttachments.elementRef, positions);
+    const pToBs = InputButtonPositions.addButtons(buttonContainers, buttons, container, dropupStyles);
+    InputButtonStyleAdjustments.set(textInput.inputElementRef, buttonContainers, fileAttachments.elementRef, pToBs);
     ButtonContainers.add(panel, buttonContainers);
   }
 }

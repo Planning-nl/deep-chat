@@ -15,6 +15,7 @@ import {OpenAIAssistantIO} from './openAI/assistant/openAIAssistantIO';
 import {CohereTextGenerationIO} from './cohere/cohereTextGenerationIO';
 import {AzureOpenAIAssistantIO} from './azure/azureOpenAIAssistantIO';
 import {CohereSummarizationIO} from './cohere/cohereSummarizationIO';
+import {OpenAIRealtimeIO} from './openAI/realtime/openAIRealtimeIO';
 import {OpenAITextToSpeechIO} from './openAI/openAITextToSpeechIO';
 import {OpenAISpeechToTextIO} from './openAI/openAISpeechToTextIO';
 import {AzureSummarizationIO} from './azure/azureSummarizationIO';
@@ -53,6 +54,9 @@ export class ServiceIOFactory {
         }
         if (directConnection.openAI.assistant) {
           return new OpenAIAssistantIO(deepChat);
+        }
+        if (directConnection.openAI.realtime) {
+          return new OpenAIRealtimeIO(deepChat);
         }
         return new OpenAIChatIO(deepChat);
       }
@@ -133,8 +137,7 @@ export class ServiceIOFactory {
         return new MistralIO(deepChat);
       }
     }
-    // if connect, make sure it is not a demo stream
-    if (connect && (!demo || !connect.stream)) {
+    if (connect && Object.keys(connect).length > 0 && !demo) {
       return new BaseServiceIO(deepChat);
     }
     // when not directConnection and connect connection, we default to demo

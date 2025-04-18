@@ -5,8 +5,8 @@ import {TextToSpeech} from '../textToSpeech/textToSpeech';
 import {MessageFile} from '../../../../types/messageFile';
 import {MessageElements, Messages} from '../messages';
 import {Response} from '../../../../types/response';
+import {MessageUtils} from '../utils/messageUtils';
 import {HTMLMessages} from '../html/htmlMessages';
-import {MessageUtils} from '../messageUtils';
 import {MessagesBase} from '../messagesBase';
 import {HTMLUtils} from '../html/htmlUtils';
 
@@ -40,7 +40,7 @@ export class MessageStream {
     } else {
       this.updateBasedOnType(content, streamType, this._elements?.bubbleElement as HTMLElement, response?.overwrite);
     }
-    if (isScrollbarAtBottomOfElement) ElementUtils.scrollToBottom(this._messages.elementRef);
+    if (!this._messages.focusMode && isScrollbarAtBottomOfElement) ElementUtils.scrollToBottom(this._messages.elementRef);
   }
 
   private setInitialState(streamType: 'text' | 'html', content: string, role?: string) {
@@ -51,11 +51,13 @@ export class MessageStream {
     this._elements =
       streamType === 'text'
         ? this._messages.addNewTextMessage(content, role)
-        : HTMLMessages.add(this._messages, content, role, this._messages.messageElementRefs);
-    this._elements.bubbleElement.classList.add(MessageStream.MESSAGE_CLASS);
-    this._activeMessageRole = role;
-    this._message = {role: this._activeMessageRole, [streamType]: content};
-    this._messages.messageToElements.push([this._message, {[streamType]: this._elements}]);
+        : HTMLMessages.add(this._messages, content, role);
+    if (this._elements) {
+      this._elements.bubbleElement.classList.add(MessageStream.MESSAGE_CLASS);
+      this._activeMessageRole = role;
+      this._message = {role: this._activeMessageRole, [streamType]: content};
+      this._messages.messageToElements.push([this._message, {[streamType]: this._elements}]);
+    }
   }
 
   private updateBasedOnType(content: string, expectedType: string, bubbleElement: HTMLElement, isOverwrite = false) {

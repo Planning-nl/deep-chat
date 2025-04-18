@@ -1,7 +1,5 @@
 import {DefinedButtonInnerElements, DefinedButtonStateStyles} from '../../../../../types/buttonInternal';
 import {MICROPHONE_ICON_STRING} from '../../../../../icons/microphone';
-import {CustomButtonInnerElements} from '../customButtonInnerElements';
-import {SVGIconUtils} from '../../../../../utils/svg/svgIconUtils';
 import {MicrophoneStyles} from '../../../../../types/microphone';
 import {ButtonStyles} from '../../../../../types/button';
 import {InputButton} from '../inputButton';
@@ -18,25 +16,19 @@ export class MicrophoneButton extends InputButton<Styles> {
 
   constructor(styles?: AllMicrophoneStyles) {
     if (styles?.position === 'dropup-menu') styles.position = 'outside-right'; // not allowed to be in dropup for UX
-    super(MicrophoneButton.createMicrophoneElement(), styles?.position, styles);
-    this._innerElements = this.createInnerElements(this._customStyles);
+    super(MicrophoneButton.createMicrophoneElement(), MICROPHONE_ICON_STRING, styles?.position, styles);
+    this._innerElements = this.createInnerElementsForStates(this.customStyles);
     this.changeToDefault();
   }
 
-  private createInnerElements(customStyles?: Styles) {
-    const baseButton = MicrophoneButton.createSVGIconElement();
+  private createInnerElementsForStates(customStyles?: Styles) {
+    const iconId = 'microphone-icon';
     return {
-      default: this.createInnerElement(baseButton, 'default', customStyles),
-      active: this.createInnerElement(baseButton, 'active', customStyles),
-      unsupported: this.createInnerElement(baseButton, 'unsupported', customStyles),
-      commandMode: this.createInnerElement(baseButton, 'commandMode', customStyles),
+      default: this.createInnerElements(iconId, 'default', customStyles),
+      active: this.createInnerElements(iconId, 'active', customStyles),
+      unsupported: this.createInnerElements(iconId, 'unsupported', customStyles),
+      commandMode: this.createInnerElements(iconId, 'commandMode', customStyles),
     };
-  }
-
-  // prettier-ignore
-  private createInnerElement(baseButton: SVGGraphicsElement,
-      state: keyof MicrophoneButton['_innerElements'], customStyles?: Styles) {
-    return CustomButtonInnerElements.createSpecificStateElement(this.elementRef, state, customStyles) || baseButton;
   }
 
   private static createMicrophoneElement() {
@@ -46,34 +38,28 @@ export class MicrophoneButton extends InputButton<Styles> {
     return buttonElement;
   }
 
-  private static createSVGIconElement() {
-    const svgIconElement = SVGIconUtils.createSVGElement(MICROPHONE_ICON_STRING);
-    svgIconElement.id = 'microphone-icon';
-    return svgIconElement;
-  }
-
   public changeToActive() {
-    this.elementRef.replaceChildren(this._innerElements.active);
+    this.changeElementsByState(this._innerElements.active);
     this.toggleIconFilter('active');
     this.reapplyStateStyle('active', ['default', 'commandMode']);
     this.isActive = true;
   }
 
   public changeToDefault() {
-    this.elementRef.replaceChildren(this._innerElements.default);
+    this.changeElementsByState(this._innerElements.default);
     this.toggleIconFilter('default');
     this.reapplyStateStyle('default', ['active', 'commandMode']);
     this.isActive = false;
   }
 
   public changeToCommandMode() {
-    this.elementRef.replaceChildren(this._innerElements.unsupported);
+    this.changeElementsByState(this._innerElements.commandMode);
     this.toggleIconFilter('command');
     this.reapplyStateStyle('commandMode', ['active']);
   }
 
   public changeToUnsupported() {
-    this.elementRef.replaceChildren(this._innerElements.unsupported);
+    this.changeElementsByState(this._innerElements.unsupported);
     this.elementRef.classList.add('unsupported-microphone');
     this.reapplyStateStyle('unsupported', ['active']);
   }

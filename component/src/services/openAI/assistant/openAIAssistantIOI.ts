@@ -1,8 +1,8 @@
 import {AssistantFunctionHandler, OpenAI, OpenAIAssistant, OpenAINewAssistant} from '../../../types/openAI';
+import {FileMessageUtils} from '../../../views/chat/messages/utils/fileMessageUtils';
 import {MessageContentI, MessageToElements} from '../../../types/messagesInternal';
 import {OpenAIAssistantUtils, UploadedFile} from './utils/openAIAssistantUtils';
 import {MessageStream} from '../../../views/chat/messages/stream/messageStream';
-import {FileMessageUtils} from '../../../views/chat/messages/fileMessageUtils';
 import {KeyVerificationDetails} from '../../../types/keyVerificationDetails';
 import {OpenAIConverseBodyInternal} from '../../../types/openAIInternal';
 import {History} from '../../../views/chat/messages/history/history';
@@ -54,7 +54,7 @@ export class OpenAIAssistantIOI extends DirectServiceIO {
   override insertKeyPlaceholderText = 'OpenAI API Key';
   override keyHelpUrl = 'https://platform.openai.com/account/api-keys';
   url = ''; // set dynamically
-  private static readonly POLLING_TIMEOUT_MS = 800;
+  private static readonly POLLING_TIMEOUT_MS = 500;
   permittedErrorPrefixes = ['Incorrect', 'Please send text', History.FAILED_ERROR_MESSAGE];
   functionHandler?: AssistantFunctionHandler;
   filesToolType: OpenAIAssistant['files_tool_type'];
@@ -91,7 +91,7 @@ export class OpenAIAssistantIOI extends DirectServiceIO {
       const threadMessages = await this.getThreadMessages(this.sessionId as string, true);
       this.deepChat.disableSubmitButton(false);
       return threadMessages;
-    } catch (e) {
+    } catch (_) {
       return [{error: 'Failed to fetch history'}];
     }
   }
